@@ -38,6 +38,33 @@ test_concurrency_exe = executable(
 
 test('debounce concurrency', test_concurrency_exe)
 
+# Compiles every C block in README.md, CONTRIBUTING.md and docs/ against the
+# public header, so a documented signature cannot drift from the code.
+test(
+  'debounce docs examples',
+  import('python').find_installation(),
+  args: [
+    files('docs/check_snippets.py'),
+    '--root', meson.project_source_root(),
+    '--lang', 'c',
+    '--prelude', '#include "debounce.h"',
+    '--prelude', '#include "doc_stubs.h"',
+    '--',
+  ] + meson.get_compiler('c').cmd_array() + [
+    '-std=c11',
+    '-Wall',
+    '-Wextra',
+    '-Wpedantic',
+    '-Werror',
+    '-Wno-unused-function',
+    '-Wno-unused-variable',
+    '-I' + (meson.project_source_root() / 'include'),
+    '-I' + (meson.current_source_dir() / 'docs'),
+    '-c', '{source}', '-o', '{object}',
+  ],
+  timeout: 60,
+)
+
 # Without an explicit flag the header picks C11 atomics, and falls back to
 # volatile when the compiler defines __STDC_NO_ATOMICS__.
 cc = meson.get_compiler('c')
