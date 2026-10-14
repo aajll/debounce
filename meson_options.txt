@@ -8,9 +8,9 @@ option(
 option(
   'atomicity_mode',
   type: 'combo',
-  choices: ['c11', 'volatile'],
-  value: 'c11',
-  description: 'Atomicity model: c11 (hosted/multi-core) or volatile (single-core MCU)',
+  choices: ['auto', 'c11', 'volatile'],
+  value: 'auto',
+  description: 'Atomicity model: auto (c11 unless __STDC_NO_ATOMICS__), c11 (hosted/multi-core) or volatile (single-core MCU)',
 )
 
 option(

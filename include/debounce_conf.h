@@ -41,16 +41,22 @@
  *     -DDEBOUNCE_USE_C11_ATOMIC
  *     -DDEBOUNCE_USE_VOLATILE_ATOMIC
  *
- *   If no flag is provided, the default is DEBOUNCE_ATOMIC_MODE_C11.
+ *   If no flag is provided, the mode is DEBOUNCE_ATOMIC_MODE_C11, or
+ *   DEBOUNCE_ATOMIC_MODE_VOLATILE when the compiler defines
+ *   __STDC_NO_ATOMICS__ (e.g. TI C2000 codegen).
  *
- *   NOTE: DEBOUNCE_ATOMIC_MODE_C11 requires <stdatomic.h>.  Targets that
- *   lack it (e.g. TI C2000 codegen) must select VOLATILE.
+ *   NOTE: DEBOUNCE_ATOMIC_MODE_C11 requires lock-free 8-bit and 16-bit
+ *   atomics and fails to compile without them.  Single-core targets that
+ *   provide <stdatomic.h> through library helpers (8-bit and 16-bit cores,
+ *   ARMv6-M) must select VOLATILE.
  */
 #ifndef DEBOUNCE_ATOMIC_MODE
 #if defined(DEBOUNCE_USE_C11_ATOMIC)
 #define DEBOUNCE_ATOMIC_MODE 1 /* C11 */
 #elif defined(DEBOUNCE_USE_VOLATILE_ATOMIC)
 #define DEBOUNCE_ATOMIC_MODE 2 /* VOLATILE */
+#elif defined(__STDC_NO_ATOMICS__)
+#define DEBOUNCE_ATOMIC_MODE 2 /* VOLATILE: no <stdatomic.h> */
 #else
 #define DEBOUNCE_ATOMIC_MODE 1 /* C11 Default */
 #endif
