@@ -1,4 +1,6 @@
 /*
+ * SPDX-License-Identifier: MIT
+ *
  * @file test_debounce.c
  * @brief Unit tests for debounce.
  */
@@ -993,7 +995,7 @@ TEST_CASE(test_symmetric_fall_counter_overshoot_deasserts)
 
         bool result = debounce_update(&db, false);
         TEST_ASSERT(result == false);
-        TEST_ASSERT(db.output == false);   /* de-asserted, not stuck */
+        TEST_ASSERT(db.output == false);    /* de-asserted, not stuck */
         TEST_ASSERT(db.fall_counter == 0u); /* reset on de-assert */
 }
 
