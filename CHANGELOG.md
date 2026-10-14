@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `trip` and `fall_trip` are atomic like the other fields, so `debounce_get_trip()` and `debounce_get_fall_trip()` no longer race with `debounce_set_trip()` and `debounce_set_fall_trip()` under the single-writer, many-readers contract.
+
 ### Changed
 
 - Added SPDX headers and a project security policy, cleaned ignore rules, and updated contributor guidance to the shared coverage baseline.
