@@ -232,9 +232,9 @@ typedef void (*debounce_callback_t)(struct debounce *db, bool rose);
  *                    Requires DEBOUNCE_ENABLE_CALLBACKS=1.
  */
 struct debounce {
-        uint16_t trip;
+        DB_ATOMIC(uint16_t) trip;
         DB_ATOMIC(uint16_t) counter;
-        uint16_t fall_trip;
+        DB_ATOMIC(uint16_t) fall_trip;
         DB_ATOMIC(uint16_t) fall_counter;
         DB_ATOMIC(bool) output;
         DB_ATOMIC(bool) latch;
