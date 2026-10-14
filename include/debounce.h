@@ -49,11 +49,13 @@
  *
  *    The mode is selected via `DEBOUNCE_ATOMIC_MODE`:
  *
- *    - `DEBOUNCE_ATOMIC_MODE_C11`: standard C11 `<stdatomic.h>`.  Reads and
- *      writes are seq_cst atomics, so the single-writer/many-readers
- *      contract is race-free on multi-core hosts/RTOSes (verified clean
- *      under ThreadSanitizer).  Note seq_cst access is not free; it may emit
- *      fences or locked instructions.
+ *    - `DEBOUNCE_ATOMIC_MODE_C11`: standard C11 `<stdatomic.h>`.  Every
+ *      field access is a relaxed atomic load or store, so the
+ *      single-writer/many-readers contract is race-free on multi-core
+ *      hosts/RTOSes (verified clean under ThreadSanitizer).  Relaxed
+ *      ordering is sufficient because each query reads one field; it
+ *      compiles to plain loads and stores, with no fences or locked
+ *      instructions.
  *    - `DEBOUNCE_ATOMIC_MODE_VOLATILE`: `volatile` only.  This is NOT a
  *      memory-model synchronisation primitive and ThreadSanitizer will (and
  *      should) report races for it on a multi-core host.  It is correct only
@@ -147,8 +149,14 @@ extern "C" {
 #if DEBOUNCE_ATOMIC_MODE == DEBOUNCE_ATOMIC_MODE_C11
 #include <stdatomic.h>
 #define DB_ATOMIC(type) _Atomic type
+/* Each query reads a single field, so relaxed ordering is sufficient. */
+#define DB_LOAD(field)  atomic_load_explicit(&(field), memory_order_relaxed)
+#define DB_STORE(field, value)                                                 \
+        atomic_store_explicit(&(field), (value), memory_order_relaxed)
 #elif DEBOUNCE_ATOMIC_MODE == DEBOUNCE_ATOMIC_MODE_VOLATILE
-#define DB_ATOMIC(type) volatile type
+#define DB_ATOMIC(type)        volatile type
+#define DB_LOAD(field)         (field)
+#define DB_STORE(field, value) ((field) = (value))
 #else
 #error "Unsupported DEBOUNCE_ATOMIC_MODE; select C11 or VOLATILE"
 #endif
@@ -281,14 +289,14 @@ debounce_init(struct debounce *db, uint16_t trip)
         bool result = false;
 
         if ((db != NULL) && (trip != 0u)) {
-                db->trip = trip;
-                db->counter = 0u;
-                db->fall_trip = 0u;
-                db->fall_counter = 0u;
-                db->output = false;
-                db->latch = false;
-                db->enabled = true;
-                db->prev_output = false;
+                DB_STORE(db->trip, trip);
+                DB_STORE(db->counter, 0u);
+                DB_STORE(db->fall_trip, 0u);
+                DB_STORE(db->fall_counter, 0u);
+                DB_STORE(db->output, false);
+                DB_STORE(db->latch, false);
+                DB_STORE(db->enabled, true);
+                DB_STORE(db->prev_output, false);
 #if DEBOUNCE_ENABLE_CALLBACKS
                 db->callback = NULL;
 #endif
@@ -318,11 +326,11 @@ static inline void
 debounce_reset(struct debounce *db)
 {
         if (db != NULL) {
-                db->counter = 0u;
-                db->fall_counter = 0u;
-                db->output = false;
-                db->latch = false;
-                db->prev_output = false;
+                DB_STORE(db->counter, 0u);
+                DB_STORE(db->fall_counter, 0u);
+                DB_STORE(db->output, false);
+                DB_STORE(db->latch, false);
+                DB_STORE(db->prev_output, false);
         }
 }
 
@@ -373,46 +381,53 @@ debounce_update(struct debounce *db, bool cond)
 {
         bool result = false;
 
-        if ((db != NULL) && (db->trip != 0u) && db->enabled) {
-                db->prev_output = db->output;
+        if ((db != NULL) && (DB_LOAD(db->trip) != 0u) && DB_LOAD(db->enabled)) {
+                DB_STORE(db->prev_output, DB_LOAD(db->output));
 
                 if (cond) {
-                        db->fall_counter = 0u;
-                        if (db->counter < db->trip) {
-                                db->counter++;
+                        DB_STORE(db->fall_counter, 0u);
+                        if (DB_LOAD(db->counter) < DB_LOAD(db->trip)) {
+                                DB_STORE(db->counter,
+                                         (uint16_t)(DB_LOAD(db->counter) + 1u));
                         }
-                        if (db->counter >= db->trip) {
-                                db->output = true;
-                                db->latch = true;
+                        if (DB_LOAD(db->counter) >= DB_LOAD(db->trip)) {
+                                DB_STORE(db->output, true);
+                                DB_STORE(db->latch, true);
                         }
                 } else {
-                        db->counter = 0u;
-                        if (db->fall_trip == 0u) {
-                                db->output = false;
-                                db->fall_counter = 0u;
-                        } else if (db->output) {
-                                if (db->fall_counter < db->fall_trip) {
-                                        db->fall_counter++;
+                        DB_STORE(db->counter, 0u);
+                        if (DB_LOAD(db->fall_trip) == 0u) {
+                                DB_STORE(db->output, false);
+                                DB_STORE(db->fall_counter, 0u);
+                        } else if (DB_LOAD(db->output)) {
+                                if (DB_LOAD(db->fall_counter)
+                                    < DB_LOAD(db->fall_trip)) {
+                                        DB_STORE(
+                                            db->fall_counter,
+                                            (uint16_t)(DB_LOAD(db->fall_counter)
+                                                       + 1u));
                                 }
-                                if (db->fall_counter >= db->fall_trip) {
-                                        db->output = false;
-                                        db->fall_counter = 0u;
+                                if (DB_LOAD(db->fall_counter)
+                                    >= DB_LOAD(db->fall_trip)) {
+                                        DB_STORE(db->output, false);
+                                        DB_STORE(db->fall_counter, 0u);
                                 }
                         } else {
-                                db->fall_counter = 0u;
+                                DB_STORE(db->fall_counter, 0u);
                         }
                 }
 
 #if DEBOUNCE_ENABLE_CALLBACKS
                 if (db->callback != NULL) {
-                        if (db->output && !db->prev_output) {
+                        if (DB_LOAD(db->output) && !DB_LOAD(db->prev_output)) {
                                 db->callback(db, true);
-                        } else if (!db->output && db->prev_output) {
+                        } else if (!DB_LOAD(db->output)
+                                   && DB_LOAD(db->prev_output)) {
                                 db->callback(db, false);
                         }
                 }
 #endif
-                result = db->output;
+                result = DB_LOAD(db->output);
         }
 
         return result;
@@ -441,7 +456,7 @@ debounce_is_active(const struct debounce *db)
         bool result = false;
 
         if (db != NULL) {
-                result = db->output;
+                result = DB_LOAD(db->output);
         }
 
         return result;
@@ -473,7 +488,7 @@ debounce_is_latched(const struct debounce *db)
         bool result = false;
 
         if (db != NULL) {
-                result = db->latch;
+                result = DB_LOAD(db->latch);
         }
 
         return result;
@@ -499,7 +514,7 @@ static inline void
 debounce_clear_latch(struct debounce *db)
 {
         if (db != NULL) {
-                db->latch = false;
+                DB_STORE(db->latch, false);
         }
 }
 
@@ -522,7 +537,7 @@ debounce_get_counter(const struct debounce *db)
         uint16_t result = 0u;
 
         if (db != NULL) {
-                result = db->counter;
+                result = DB_LOAD(db->counter);
         }
 
         return result;
@@ -546,7 +561,7 @@ debounce_get_trip(const struct debounce *db)
         uint16_t result = 0u;
 
         if (db != NULL) {
-                result = db->trip;
+                result = DB_LOAD(db->trip);
         }
 
         return result;
@@ -572,7 +587,7 @@ static inline void
 debounce_enable(struct debounce *db)
 {
         if (db != NULL) {
-                db->enabled = true;
+                DB_STORE(db->enabled, true);
         }
 }
 
@@ -602,11 +617,11 @@ static inline void
 debounce_disable(struct debounce *db)
 {
         if (db != NULL) {
-                db->enabled = false;
-                db->counter = 0u;
-                db->fall_counter = 0u;
-                db->output = false;
-                db->prev_output = false;
+                DB_STORE(db->enabled, false);
+                DB_STORE(db->counter, 0u);
+                DB_STORE(db->fall_counter, 0u);
+                DB_STORE(db->output, false);
+                DB_STORE(db->prev_output, false);
         }
 }
 
@@ -628,7 +643,7 @@ debounce_is_enabled(const struct debounce *db)
         bool result = false;
 
         if (db != NULL) {
-                result = db->enabled;
+                result = DB_LOAD(db->enabled);
         }
 
         return result;
@@ -671,14 +686,14 @@ debounce_init_symmetric(struct debounce *db, uint16_t rise_trip,
         bool result = false;
 
         if ((db != NULL) && (rise_trip != 0u)) {
-                db->trip = rise_trip;
-                db->counter = 0u;
-                db->fall_trip = fall_trip;
-                db->fall_counter = 0u;
-                db->output = false;
-                db->latch = false;
-                db->enabled = true;
-                db->prev_output = false;
+                DB_STORE(db->trip, rise_trip);
+                DB_STORE(db->counter, 0u);
+                DB_STORE(db->fall_trip, fall_trip);
+                DB_STORE(db->fall_counter, 0u);
+                DB_STORE(db->output, false);
+                DB_STORE(db->latch, false);
+                DB_STORE(db->enabled, true);
+                DB_STORE(db->prev_output, false);
 #if DEBOUNCE_ENABLE_CALLBACKS
                 db->callback = NULL;
 #endif
@@ -710,8 +725,8 @@ debounce_set_fall_trip(struct debounce *db, uint16_t fall_trip)
         bool result = false;
 
         if (db != NULL) {
-                db->fall_trip = fall_trip;
-                db->fall_counter = 0u;
+                DB_STORE(db->fall_trip, fall_trip);
+                DB_STORE(db->fall_counter, 0u);
                 result = true;
         }
 
@@ -737,7 +752,7 @@ debounce_get_fall_trip(const struct debounce *db)
         uint16_t result = 0u;
 
         if (db != NULL) {
-                result = db->fall_trip;
+                result = DB_LOAD(db->fall_trip);
         }
 
         return result;
@@ -775,9 +790,9 @@ debounce_set_trip(struct debounce *db, uint16_t trip)
         bool result = false;
 
         if ((db != NULL) && (trip != 0u)) {
-                db->trip = trip;
-                db->counter = 0u;
-                db->output = false;
+                DB_STORE(db->trip, trip);
+                DB_STORE(db->counter, 0u);
+                DB_STORE(db->output, false);
                 result = true;
         }
 
@@ -807,7 +822,7 @@ debounce_rose(const struct debounce *db)
         bool result = false;
 
         if (db != NULL) {
-                result = (db->output && !db->prev_output);
+                result = (DB_LOAD(db->output) && !DB_LOAD(db->prev_output));
         }
 
         return result;
@@ -834,7 +849,7 @@ debounce_fell(const struct debounce *db)
         bool result = false;
 
         if (db != NULL) {
-                result = (!db->output && db->prev_output);
+                result = (!DB_LOAD(db->output) && DB_LOAD(db->prev_output));
         }
 
         return result;
