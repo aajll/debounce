@@ -61,8 +61,8 @@
  *      single, indivisible instruction — the intended case for MCUs such as
  *      the TI C2000, whose toolchain ships no `<stdatomic.h>`.
  *
- *    IEC 61508 awareness
- *    -------------------
+ *    Defensive design
+ *    ----------------
  *    Defensive NULL checks are applied at every API boundary.  All state
  *    is deterministic: no dynamic memory, no recursion, no data-dependent
  *    loop bounds.  `trip == 0` is an invalid configuration and is rejected

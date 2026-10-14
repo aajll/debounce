@@ -16,7 +16,7 @@ Generic saturating counter debounce primitive.
 - **Enable/disable gate** : `debounce_enable()` and `debounce_disable()` inhibit processing during known transient conditions (e.g. system startup) without discarding the sticky fault record.
 - **Allocation-free** : All state is held in a caller-owned `struct debounce`; no dynamic memory, no global state.
 - **Deterministic execution** : No recursion, no data-dependent loop bounds, no blocking calls making it safe for use in ISRs and hard real-time control loops.
-- **MISRA C 2023 aware** : Single exit points per function, increment separated from comparison, and the single advisory deviation (Rule 15.5) documented inline — written with safety-conscious, IEC-61508-style environments in mind (not formally certified).
+- **MISRA C 2023 aware** : Single exit points per function, increment separated from comparison, and the single advisory deviation (Rule 15.5) documented inline.
 - **Header-only implementation** : All functions are `static inline`; no separate link step required.
 
 ## Installation
