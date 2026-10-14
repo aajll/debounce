@@ -279,14 +279,14 @@ Only available when `DEBOUNCE_ENABLE_CALLBACKS` is defined to `1`.
 The file `debounce_conf.h` (included automatically by `debounce.h`) provides compile-time
 options. Override values before inclusion or via compiler flags:
 
-| Macro                          | Default   | Description                                                                                                                                                   |
-| ------------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DEBOUNCE_ENABLE_CALLBACKS`    | `0`       | Set to `1` to enable the transition-callback mechanism. Adds a function-pointer field to `struct debounce` and callback dispatch code in `debounce_update()`. |
-| `DEBOUNCE_USE_C11_ATOMIC`      | (default) | Select the C11 atomicity model: `struct debounce` fields are `_Atomic`. Requires `<stdatomic.h>`.                                                             |
-| `DEBOUNCE_USE_VOLATILE_ATOMIC` | —         | Select the `volatile` model. For single-core MCUs whose toolchain lacks `<stdatomic.h>` (e.g. TI C2000). See the thread-safety note below.                    |
+| Macro                          | Default   | Description                                                                                                                                                       |
+| ------------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DEBOUNCE_ENABLE_CALLBACKS`    | `0`       | Set to `1` to enable the transition-callback mechanism. Adds a function-pointer field to `struct debounce` and callback dispatch code in `debounce_update()`.     |
+| `DEBOUNCE_USE_C11_ATOMIC`      | (default) | Select the C11 atomicity model: `struct debounce` fields are `_Atomic`. Requires lock-free 8-bit and 16-bit atomics, checked at compile time.                     |
+| `DEBOUNCE_USE_VOLATILE_ATOMIC` | —         | Select the `volatile` model, for single-core MCUs. The default when the compiler defines `__STDC_NO_ATOMICS__` (e.g. TI C2000). See the thread-safety note below. |
 
-When building with Meson, prefer the `-Datomicity_mode={c11,volatile}` option, which
-defines the matching macro for you. Selecting an unsupported mode is a hard `#error`.
+When building with Meson, prefer the `-Datomicity_mode={auto,c11,volatile}` option, which
+defines the matching macro for you; `auto`, the default, leaves the choice to the header. Selecting an unsupported mode is a hard `#error`.
 
 ### Defensive behaviour
 

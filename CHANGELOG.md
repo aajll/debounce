@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- The atomicity mode defaults to volatile when the compiler defines `__STDC_NO_ATOMICS__`, so toolchains without `<stdatomic.h>` build without a flag; the Meson `atomicity_mode` option gains an `auto` default that leaves the choice to the header.
+- The C11 mode fails at compile time on targets whose 8-bit or 16-bit atomics are not always lock-free, instead of calling libatomic helpers on every access. Such single-core targets select `DEBOUNCE_USE_VOLATILE_ATOMIC`.
 - Added SPDX headers and a project security policy, cleaned ignore rules, and updated contributor guidance to the shared coverage baseline.
 
 ## [1.2.0] - 2026-05-27

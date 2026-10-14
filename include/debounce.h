@@ -879,4 +879,21 @@ _Static_assert((sizeof(uint16_t) * CHAR_BIT) >= 16,
 _Static_assert(sizeof(struct debounce) <= 64,
                "debounce struct exceeds reasonable size");
 
+#if DEBOUNCE_ATOMIC_MODE == DEBOUNCE_ATOMIC_MODE_C11
+/*
+ * Every field access must be a native atomic instruction. A target without
+ * lock-free 8-bit and 16-bit atomics (8-bit and 16-bit cores, ARMv6-M) would
+ * otherwise route each access through libatomic or a user-supplied helper.
+ * Such single-core targets select DEBOUNCE_USE_VOLATILE_ATOMIC instead.
+ */
+_Static_assert(
+    ((sizeof(uint16_t) == sizeof(short)) && (ATOMIC_SHORT_LOCK_FREE == 2))
+        || ((sizeof(uint16_t) == sizeof(int)) && (ATOMIC_INT_LOCK_FREE == 2)),
+    "debounce: uint16_t atomics are not always lock-free on this "
+    "target; define DEBOUNCE_USE_VOLATILE_ATOMIC");
+_Static_assert(ATOMIC_BOOL_LOCK_FREE == 2,
+               "debounce: bool atomics are not always lock-free on this "
+               "target; define DEBOUNCE_USE_VOLATILE_ATOMIC");
+#endif
+
 #endif /* DEBOUNCE_H_ */
