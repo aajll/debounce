@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ *
+ * @file test_debounce_concurrency.c
+ * @brief Single-writer, many-readers concurrency test for the atomicity modes.
+ */
+
 #include <assert.h>
 #include <debounce.h>
 #include <pthread.h>

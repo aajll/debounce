@@ -13,12 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v10.1.0
 
-      - name: Install Meson and Ninja
-        run: python -m pip install --upgrade meson ninja
+      - name: Install meson and ninja
+        run: uv tool install meson && uv tool install ninja
 
       - name: Configure (debug + tests)
         run: meson setup build --buildtype=debug -Dbuild_tests=true -Db_sanitize=address,undefined
@@ -52,12 +50,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v10.1.0
 
-      - name: Install Meson and Ninja
-        run: python -m pip install --upgrade meson ninja
+      - name: Install meson and ninja
+        run: uv tool install meson && uv tool install ninja
 
       # -Dtsan=true builds the concurrency test under ThreadSanitizer; the
       # default atomicity_mode (C11 on this host) must be race-free here.
@@ -79,17 +75,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v10.1.0
 
-      - name: Install Meson and Ninja
-        run: python -m pip install --upgrade meson ninja
+      - name: Install meson and ninja
+        run: uv tool install meson && uv tool install ninja
 
-      # Guard the single-core/MCU path: the header must build and the tests
-      # must pass with volatile-qualified state. (The TI C2000 toolchain
-      # itself is not available on CI; this catches host-visible regressions
-      # in the volatile mode.)
+      # Guard the single-core/MCU path on the host: the header must build and
+      # the tests must pass with volatile-qualified state.
       - name: Configure (volatile + tests)
         run: meson setup build-vol --buildtype=debug -Dbuild_tests=true -Datomicity_mode=volatile
 
@@ -102,9 +94,8 @@ jobs:
   # ---------------------------------------------------------------------------
   # Code coverage gate. Builds with gcov instrumentation, runs the full test
   # suite, and fails the job if line or branch coverage of the header drops
-  # below the threshold. Threshold is 100% to match the baseline; lower it
-  # deliberately if a justified gap is introduced. Callbacks are enabled so
-  # the optional callback paths are measured.
+  # below the threshold. Callbacks are enabled so the optional callback paths
+  # are measured.
   # ---------------------------------------------------------------------------
   coverage:
     name: "Coverage gate"
@@ -114,12 +105,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v10.1.0
 
-      - name: Install Meson, Ninja and gcovr
-        run: python -m pip install --upgrade meson ninja gcovr
+      - name: Install meson, ninja and gcovr
+        run: uv tool install meson && uv tool install ninja && uv tool install gcovr
 
       - name: Configure (coverage)
         run: >
@@ -144,8 +133,8 @@ jobs:
             --html-details coverage-report/index.html \
             --txt coverage-report/summary.txt \
             --print-summary \
-            --fail-under-line 80 \
-            --fail-under-branch 70
+            --fail-under-line 100 \
+            --fail-under-branch 100
 
   release-build:
     name: Release build
@@ -155,15 +144,121 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v10.1.0
 
-      - name: Install Meson and Ninja
-        run: python -m pip install --upgrade meson ninja
+      - name: Install meson and ninja
+        run: uv tool install meson && uv tool install ninja
 
       - name: Configure (release)
         run: meson setup build --buildtype=release -Dbuild_tests=false
 
       - name: Build
         run: meson compile -C build
+
+  # ---------------------------------------------------------------------------
+  # Compile the header with the TI C2000 code generation tools, a 16-bit-MAU
+  # target (CHAR_BIT == 16), under both object formats, with and without
+  # callbacks. The library is header-only, so the job compiles the configure
+  # probe directly and asserts that the header selects the volatile mode.
+  # ---------------------------------------------------------------------------
+  c2000:
+    name: "TI C2000 (CGT ${{ matrix.cgt }})"
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cgt: "22.6.2"
+            sha256: "9773f338df7b7314bc459be2cd9d9bf329786da8de6531f8f2d3d38c1e9f5750"
+          - cgt: "25.11.1"
+            sha256: "2f3a978e24a53279c9796ad374c32b530fc58fd085fd71288597846fe169c821"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache TI C2000 CGT
+        id: cache-cgt
+        uses: actions/cache@v4
+        with:
+          path: ~/ti
+          key: ti-cgt-c2000-${{ matrix.cgt }}
+
+      - name: Install TI C2000 CGT
+        if: steps.cache-cgt.outputs.cache-hit != 'true'
+        run: |
+          bin="ti_cgt_c2000_${{ matrix.cgt }}.LTS_linux-x64_installer.bin"
+          curl -sSfL --retry 3 -o "$RUNNER_TEMP/$bin" \
+            "https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-xqxJ05PLfM/${{ matrix.cgt }}.LTS/$bin"
+          echo "${{ matrix.sha256 }}  $RUNNER_TEMP/$bin" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/$bin"
+          "$RUNNER_TEMP/$bin" --mode unattended --prefix "$HOME/ti"
+
+      - name: Compile the header (COFF and EABI)
+        run: |
+          CGT="$HOME/ti/ti-cgt-c2000_${{ matrix.cgt }}.LTS"
+          for abi in coffabi eabi; do
+            for callbacks in 0 1; do
+              "$CGT/bin/cl2000" -v28 --float_support=fpu32 --abi="$abi" \
+                --c11 --emit_warnings_as_errors \
+                -I"$CGT/include" -Iinclude \
+                -DDEBOUNCE_ENABLE_CALLBACKS="$callbacks" \
+                -DDEBOUNCE_PROBE_EXPECT_MODE=DEBOUNCE_ATOMIC_MODE_VOLATILE \
+                --compile_only --obj_directory="$RUNNER_TEMP" \
+                tests/atomic_mode_probe.c
+            done
+          done
+
+  # ---------------------------------------------------------------------------
+  # Enforce clang-format on all hand-written sources. scripts/format.sh pins
+  # the clang-format release and runs it through uvx, so CI and local checks
+  # use the same formatter whatever the runner's packages provide.
+  # ---------------------------------------------------------------------------
+  format:
+    name: "clang-format"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v10.1.0
+
+      - name: Check formatting
+        run: scripts/format.sh
+
+  # ---------------------------------------------------------------------------
+  # MISRA C:2023 static analysis via misch (cppcheck + misra addon), driven by
+  # misra.toml. Both atomicity modes are analysed: the default C11 mode and the
+  # volatile profile. The job fails only on findings missing from that mode's
+  # baseline in analysis/baseline/. The baselines are recorded without rule
+  # texts, which change the fingerprinted messages, so the job runs without them.
+  # ---------------------------------------------------------------------------
+  misra:
+    name: "MISRA (misch)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v10.1.0
+
+      # Ubuntu 24.04's cppcheck (2.13) does not model <stdatomic.h>, so it
+      # reports the C11 atomic generics as undeclared functions. The Homebrew
+      # bottle is a current cppcheck; brew is preinstalled on the runner.
+      - name: Install cppcheck
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install cppcheck
+          echo "$(brew --prefix)/bin" >> "$GITHUB_PATH"
+          cppcheck --version
+
+      - name: Install misch
+        run: uv tool install misch
+
+      - name: Analyse (default C11 mode)
+        run: misch run --baseline -v
+
+      - name: Analyse (volatile profile)
+        run: misch run --baseline --profile volatile -v

@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ *
+ * @file test_installed_consumer.c
+ * @brief Consumer built against the installed headers and pkg-config package.
+ */
+
 #include <stdint.h>
 
 #if __has_include(<debounce/debounce.h>)

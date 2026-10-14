@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- MISRA C:2023 analysis with `misch`, configured by `misra.toml`, for the C11 and volatile modes. CI fails on any finding outside the baselines in `analysis/baseline/`.
+- A TI C2000 job in CI that compiles the header with CGT 22.6.2 and 25.11.1 under COFF and EABI, warnings as errors, and asserts the volatile mode is selected.
+- A `clang-format` check through `scripts/format.sh`, which pins the formatter release and runs it with `uvx`.
+
 ### Fixed
 
 - `trip` and `fall_trip` are atomic like the other fields, so `debounce_get_trip()` and `debounce_get_fall_trip()` no longer race with `debounce_set_trip()` and `debounce_set_fall_trip()` under the single-writer, many-readers contract.
@@ -15,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The atomicity mode defaults to volatile when the compiler defines `__STDC_NO_ATOMICS__`, so toolchains without `<stdatomic.h>` build without a flag; the Meson `atomicity_mode` option gains an `auto` default that leaves the choice to the header.
 - The C11 mode fails at compile time on targets whose 8-bit or 16-bit atomics are not always lock-free, instead of calling libatomic helpers on every access. Such single-core targets select `DEBOUNCE_USE_VOLATILE_ATOMIC`.
 - The C11 mode uses relaxed atomic loads and stores instead of sequentially consistent access, and increments counters with a load and store instead of an atomic read-modify-write. Each query reads one field, so no ordering is lost; `debounce_update()` no longer emits fences or locked instructions on x86-64 and AArch64.
+- CI installs Meson, Ninja, gcovr and misch with `uv` instead of `pip`, and the coverage gate rises to 100% line and branch, the coverage already measured.
 - Added SPDX headers and a project security policy, cleaned ignore rules, and updated contributor guidance to the shared coverage baseline.
 
 ## [1.2.0] - 2026-05-27

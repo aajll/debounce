@@ -1,0 +1,7 @@
+[
+  {
+    "directory": ".",
+    "arguments": ["cc", "-std=c11", "-Iinclude", "-c", "analysis/debounce_header.c", "-o", "debounce_header.o"],
+    "file": "analysis/debounce_header.c"
+  }
+]

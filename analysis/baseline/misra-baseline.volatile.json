@@ -1,0 +1,23 @@
+{
+  "schema": "misch/baseline@2",
+  "fingerprints": {
+    "3522592d3718": {
+      "rule_id": "misra-c2012-10.4",
+      "file": "include/debounce.h",
+      "message": "misra violation (use --rule-texts=<file> to get proper output)",
+      "count": 2
+    },
+    "4b6dace07517": {
+      "rule_id": "misra-c2012-20.7",
+      "file": "include/debounce.h",
+      "message": "misra violation (use --rule-texts=<file> to get proper output)",
+      "count": 2
+    },
+    "64fea3a8d27a": {
+      "rule_id": "misra-c2012-15.7",
+      "file": "include/debounce.h",
+      "message": "misra violation (use --rule-texts=<file> to get proper output)",
+      "count": 1
+    }
+  }
+}

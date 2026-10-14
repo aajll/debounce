@@ -1,4 +1,6 @@
 /*
+ * SPDX-License-Identifier: MIT
+ *
  * @file test_debounce_callbacks.c
  * @brief Unit tests for the optional transition-callback mechanism.
  *
