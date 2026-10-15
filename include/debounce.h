@@ -138,10 +138,6 @@
 #ifndef DEBOUNCE_H_
 #define DEBOUNCE_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* ================ INCLUDES ================================================ */
 
 #include "debounce_conf.h"
@@ -908,10 +904,6 @@ debounce_set_callback(struct debounce *db, debounce_callback_t cb)
         if (db != NULL) {
                 db->callback = cb;
         }
-}
-#endif
-
-#ifdef __cplusplus
 }
 #endif
 
