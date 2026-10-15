@@ -2,6 +2,7 @@ project(
   'debounce',
   'c',
   version: '1.2.0',
+  meson_version: '>=0.57.0',
   default_options: [
     'c_std=c11',
     'warning_level=3',
@@ -11,16 +12,27 @@ project(
 
 project_description = 'Generic saturating counter debounce primitive.'
 
-ver = meson.project_version().split('.')
-major = ver[0].to_int()
-minor = ver[1].to_int()
-patch = ver[2].to_int()
+# === Version ==================================================================
+# include/debounce.h defines the version macros, so a copy-in build has them.
+# Configuration fails when they differ from the project version.
 
-conf = configuration_data()
-conf.set_quoted('VERSION', meson.project_version())
-conf.set('MAJOR', major)
-conf.set('MINOR', minor)
-conf.set('PATCH', patch)
+fs = import('fs')
+version_parts = meson.project_version().split('.')
+version_macros = {
+  'DEBOUNCE_VERSION_MAJOR': version_parts[0],
+  'DEBOUNCE_VERSION_MINOR': version_parts[1],
+  'DEBOUNCE_VERSION_PATCH': version_parts[2],
+  'DEBOUNCE_VERSION': '"' + meson.project_version() + '"',
+}
+header_lines = []
+foreach line : fs.read('include' / 'debounce.h').split('\n')
+  header_lines += ' '.join(line.split())
+endforeach
+foreach name, value : version_macros
+  if '#define @0@ @1@'.format(name, value) not in header_lines
+    error('include/debounce.h must define @0@ as @1@'.format(name, value))
+  endif
+endforeach
 
 # Apply project options as compiler arguments
 atomicity = get_option('atomicity_mode')
@@ -34,20 +46,10 @@ if get_option('enable_callbacks')
   add_project_arguments('-DDEBOUNCE_ENABLE_CALLBACKS=1', language: 'c')
 endif
 
-generated_version_header = configure_file(
-  input: 'config' / 'debounce_version.h.in',
-  output: 'debounce_version.h',
-  configuration: conf,
-  install: true,
-  install_dir: get_option('includedir') / 'debounce',
-)
-
 public_headers = include_directories('include')
-generated_headers = include_directories('.')
 
 debounce_dep = declare_dependency(
-  include_directories: [public_headers, generated_headers],
-  sources: generated_version_header,
+  include_directories: [public_headers],
 )
 
 meson.override_dependency('debounce', debounce_dep)
@@ -55,6 +57,7 @@ meson.override_dependency('debounce', debounce_dep)
 install_headers(
   'include/debounce.h',
   'include/debounce_conf.h',
+  'include/debounce_version.h',
   subdir: 'debounce',
 )
 

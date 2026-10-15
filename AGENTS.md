@@ -40,7 +40,7 @@ scripts/format.sh --fix    # rewrite in place
 
 ### 1.2 Notes
 
-- `meson setup` generates the optional `debounce_version.h` into the build directory.
+- `include/debounce.h` defines the version macros, and `meson setup` fails when they differ from `project(version:)`, so a release updates both. `include/debounce_version.h` is a deprecated header that includes `debounce.h`.
 - `-Datomicity_mode` and `-Denable_callbacks` are project arguments: they affect this project's tests, not a consumer's translation units.
 - Regenerate a MISRA baseline only with `MISRA_RULE_TEXTS` unset (`env -u MISRA_RULE_TEXTS misch baseline`), because the rule texts change the recorded messages.
 
