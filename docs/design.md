@@ -96,7 +96,6 @@ The C11 mode requires lock-free atomics. Static assertions require `ATOMIC_BOOL_
 - Counter arithmetic is in `uint16_t` with an explicit cast after each increment, and saturation keeps every counter at or below its threshold, so nothing wraps.
 - Every function has a single exit through a `result` variable.
 - A static assertion keeps `struct debounce` at or below 64 bytes.
-- The header declares its functions `extern "C"` for C++ callers, but C++ builds are not tested.
 
 ## Verification
 
