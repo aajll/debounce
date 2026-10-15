@@ -178,3 +178,25 @@ void debounce_set_callback(struct debounce *db, debounce_callback_t cb);
 ```
 
 Available only when `DEBOUNCE_ENABLE_CALLBACKS` is `1`. `debounce_set_callback` registers a function that `debounce_update` calls on each output edge, with `rose` true on a rising edge and false on a falling edge; `NULL` removes it. The callback is configuration, so `debounce_reset` and `debounce_disable` keep it, and `debounce_init` clears it. It runs in the updating context, which may be an interrupt, so keep it short and non-blocking.
+
+## Version
+
+`debounce.h` defines the release it belongs to, so a copied-in header still identifies itself:
+
+<!-- snippet: skip -->
+```c
+#define DEBOUNCE_VERSION_MAJOR 1
+#define DEBOUNCE_VERSION_MINOR 2
+#define DEBOUNCE_VERSION_PATCH 0
+#define DEBOUNCE_VERSION "1.2.0"
+```
+
+`DEBOUNCE_VERSION_NUMBER` is `MAJOR * 10000 + MINOR * 100 + PATCH` as a `long`, so it holds any version where `int` is 16 bits. Compare it in the preprocessor to require a minimum release:
+
+```c
+#if DEBOUNCE_VERSION_NUMBER < 10200L
+#error "debounce 1.2.0 or later is required"
+#endif
+```
+
+`DEBOUNCE_VERSION_STRING` is the same string as `DEBOUNCE_VERSION`. `debounce_version.h` is a deprecated header that includes `debounce.h`, kept so existing includes compile until the next major release.

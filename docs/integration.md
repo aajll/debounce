@@ -22,7 +22,7 @@ Include the header from any translation unit that uses it:
 #include "debounce.h"
 ```
 
-No generated header and no link step are needed. `debounce_version.h` exists only in Meson builds.
+No generated header and no link step are needed. `debounce.h` defines the version macros described in [api.md](api.md#version).
 
 ## Meson subproject
 
@@ -48,8 +48,9 @@ After installation the headers live in a `debounce/` subdirectory:
 <!-- snippet: skip -->
 ```c
 #include <debounce/debounce.h>
-#include <debounce/debounce_version.h>
 ```
+
+`debounce_version.h` is installed beside it as a deprecated header that includes `debounce.h`.
 
 ## Configuration
 

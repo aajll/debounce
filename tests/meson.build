@@ -4,7 +4,7 @@ test_exe = executable(
   'test_debounce',
   files('test_debounce.c'),
   dependencies: [debounce_dep],
-  include_directories: [public_headers, generated_headers],
+  include_directories: [public_headers],
 )
 
 test('debounce module', test_exe)
@@ -13,7 +13,7 @@ test_callbacks_exe = executable(
   'test_debounce_callbacks',
   files('test_debounce_callbacks.c'),
   dependencies: [debounce_dep],
-  include_directories: [public_headers, generated_headers],
+  include_directories: [public_headers],
   c_args: ['-DDEBOUNCE_ENABLE_CALLBACKS=1'],
 )
 
@@ -32,7 +32,7 @@ test_concurrency_exe = executable(
   'test_debounce_concurrency',
   files('test_debounce_concurrency.c'),
   dependencies: [debounce_dep, thread_dep],
-  include_directories: [public_headers, generated_headers],
+  include_directories: [public_headers],
   override_options: concurrency_override,
 )
 
