@@ -199,4 +199,4 @@ Available only when `DEBOUNCE_ENABLE_CALLBACKS` is `1`. `debounce_set_callback` 
 #endif
 ```
 
-`DEBOUNCE_VERSION_STRING` is the same string as `DEBOUNCE_VERSION`. `debounce_version.h` is a deprecated header that includes `debounce.h`, kept so existing includes compile until the next major release.
+`DEBOUNCE_VERSION_STRING` is the same string as `DEBOUNCE_VERSION`.

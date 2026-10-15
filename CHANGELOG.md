@@ -18,13 +18,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- `debounce.h` defines `DEBOUNCE_VERSION_MAJOR`, `_MINOR`, `_PATCH`, `DEBOUNCE_VERSION`, `DEBOUNCE_VERSION_STRING` and a new `DEBOUNCE_VERSION_NUMBER` (`long`, `MAJOR * 10000 + MINOR * 100 + PATCH`), so a copied-in header carries its version. `debounce_version.h` is no longer generated; it is installed as a deprecated header that includes `debounce.h`. Meson fails to configure when the header and `project(version:)` disagree, and the build needs Meson 0.57 or later.
+- `debounce.h` defines `DEBOUNCE_VERSION_MAJOR`, `_MINOR`, `_PATCH`, `DEBOUNCE_VERSION`, `DEBOUNCE_VERSION_STRING` and a new `DEBOUNCE_VERSION_NUMBER` (`long`, `MAJOR * 10000 + MINOR * 100 + PATCH`), so a copied-in header carries its version. Meson fails to configure when the header and `project(version:)` disagree, and the build needs Meson 0.57 or later.
 - The atomicity mode defaults to volatile when the compiler defines `__STDC_NO_ATOMICS__`, so toolchains without `<stdatomic.h>` build without a flag; the Meson `atomicity_mode` option gains an `auto` default that leaves the choice to the header.
 - The C11 mode fails at compile time on targets whose 8-bit or 16-bit atomics are not always lock-free, instead of calling libatomic helpers on every access. Such single-core targets select `DEBOUNCE_USE_VOLATILE_ATOMIC`.
 - The C11 mode uses relaxed atomic loads and stores instead of sequentially consistent access, and increments counters with a load and store instead of an atomic read-modify-write. Each query reads one field, so no ordering is lost; `debounce_update()` no longer emits fences or locked instructions on x86-64 and AArch64.
 - CI installs Meson, Ninja, gcovr and misch with `uv` instead of `pip`, and the coverage gate rises to 100% line and branch, the coverage already measured.
 - The README is a short landing page, with installation and configuration in `docs/integration.md`, the API reference in `docs/api.md`, and the design record in `docs/design.md`. A `debounce docs examples` test compiles every C example in them against the header. CONTRIBUTING and AGENTS describe the `uv`, `misch` baseline and `scripts/format.sh` workflow.
 - Added SPDX headers and a project security policy, cleaned ignore rules, and updated contributor guidance to the shared coverage baseline.
+
+### Removed
+
+- `debounce_version.h`. `debounce.h` defines the version macros.
 
 ## [1.2.0] - 2026-05-27
 

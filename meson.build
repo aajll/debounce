@@ -57,7 +57,6 @@ meson.override_dependency('debounce', debounce_dep)
 install_headers(
   'include/debounce.h',
   'include/debounce_conf.h',
-  'include/debounce_version.h',
   subdir: 'debounce',
 )
 
