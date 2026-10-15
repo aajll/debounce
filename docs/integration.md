@@ -50,8 +50,6 @@ After installation the headers live in a `debounce/` subdirectory:
 #include <debounce/debounce.h>
 ```
 
-`debounce_version.h` is installed beside it as a deprecated header that includes `debounce.h`.
-
 ## Configuration
 
 Every translation unit that includes `debounce.h` must see the same configuration, because it changes the layout of `struct debounce`. Set it with compiler flags, or in a project header included before `debounce.h`.

@@ -13,12 +13,6 @@
 #include "debounce.h"
 #endif
 
-#if __has_include(<debounce/debounce_version.h>)
-#include <debounce/debounce_version.h>
-#else
-#include "debounce_version.h"
-#endif
-
 #if DEBOUNCE_VERSION_NUMBER                                                    \
     != ((DEBOUNCE_VERSION_MAJOR * 10000L) + (DEBOUNCE_VERSION_MINOR * 100L)    \
         + DEBOUNCE_VERSION_PATCH)
