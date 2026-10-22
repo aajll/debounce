@@ -766,6 +766,24 @@ TEST_CASE(test_set_trip_while_active)
         TEST_ASSERT(db.latch == true);
 }
 
+/* set_trip after the output has been held high reports no edge */
+TEST_CASE(test_set_trip_reports_no_edge)
+{
+        struct debounce db;
+        debounce_init(&db, 2u);
+
+        for (int i = 0; i < 4; i++) {
+                debounce_update(&db, true);
+        }
+        TEST_ASSERT(db.output == true);
+        TEST_ASSERT(db.prev_output == true);
+
+        debounce_set_trip(&db, 3u);
+        TEST_ASSERT(db.prev_output == false);
+        TEST_ASSERT(debounce_fell(&db) == false);
+        TEST_ASSERT(debounce_rose(&db) == false);
+}
+
 /* After set_trip, the new threshold governs assertion */
 TEST_CASE(test_set_trip_then_count_to_new_trip)
 {
@@ -1272,6 +1290,8 @@ main(void)
         run_test(test_set_trip_lower_than_current_counter,
                  "test_set_trip_lower_than_current_counter");
         run_test(test_set_trip_while_active, "test_set_trip_while_active");
+        run_test(test_set_trip_reports_no_edge,
+                 "test_set_trip_reports_no_edge");
         run_test(test_set_trip_then_count_to_new_trip,
                  "test_set_trip_then_count_to_new_trip");
         run_test(test_set_trip_while_disabled, "test_set_trip_while_disabled");
