@@ -3,7 +3,7 @@
 project(
   'debounce',
   'c',
-  version: '1.2.0',
+  version: '1.3.0',
   meson_version: '>=0.57.0',
   default_options: [
     'c_std=c11',
