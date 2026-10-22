@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 thread_dep = dependency('threads')
 cc = meson.get_compiler('c')
 probe_src = files('atomic_mode_probe.c')
