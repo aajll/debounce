@@ -120,7 +120,7 @@ bool debounce_set_trip(struct debounce *db, uint16_t trip);
 bool debounce_set_fall_trip(struct debounce *db, uint16_t fall_trip);
 ```
 
-`debounce_set_trip` changes the assertion threshold. It returns `false` when `db` is `NULL` or `trip` is zero. On success it also resets the assertion counter and the output, because the old count may exceed the new threshold; the latch, the gate, and the de-assertion state are unchanged.
+`debounce_set_trip` changes the assertion threshold. It returns `false` when `db` is `NULL` or `trip` is zero. On success it also resets the assertion counter, the output and the edge state, because the old count may exceed the new threshold; `debounce_rose` and `debounce_fell` report no edge until the next update. The latch, the gate, and the de-assertion state are unchanged.
 
 `debounce_set_fall_trip` changes the de-assertion threshold, where zero selects immediate de-assertion, and resets the de-assertion counter. It returns `false` only when `db` is `NULL`.
 

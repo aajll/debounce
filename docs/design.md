@@ -56,7 +56,7 @@ The gate is how two objects compose: one debounces a "ready" condition, and its 
 
 ### Configuration changes
 
-`debounce_set_trip` resets `counter` and `output`, because a count accumulated under a larger threshold could exceed a smaller one and break the `counter <= trip` invariant. `debounce_set_fall_trip` resets `fall_counter` for the same reason. Neither touches the latch.
+`debounce_set_trip` resets `counter`, `output` and `prev_output`, because a count accumulated under a larger threshold could exceed a smaller one and break the `counter <= trip` invariant. Clearing `prev_output` with `output` keeps the forced reset from reading as a falling edge, as in `debounce_reset`. `debounce_set_fall_trip` resets `fall_counter` for the same reason. Neither touches the latch.
 
 Transition callbacks are optional at compile time. When `DEBOUNCE_ENABLE_CALLBACKS` is `0`, the callback field and the dispatch code are not compiled, so the object and `debounce_update` carry no cost for them. When enabled, the callback runs at the end of `debounce_update`, after the state is consistent, and is treated as configuration that survives reset and disable.
 

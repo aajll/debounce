@@ -796,9 +796,9 @@ debounce_get_fall_trip(const struct debounce *db)
  * @pre  @p trip is greater than zero.
  *
  * @post On success: `db->trip == trip`, `db->counter == 0`,
- *       `db->output == false`.  `db->latch`, `db->enabled`,
- *       `db->prev_output`, `db->fall_trip`, and `db->fall_counter`
- *       are unchanged.
+ *       `db->output == false`, `db->prev_output == false`.  `db->latch`,
+ *       `db->enabled`, `db->fall_trip`, and `db->fall_counter` are
+ *       unchanged.
  * @post On failure: the object is not modified.
  *
  * @note  The counter and output are reset because the old counter value
@@ -815,6 +815,7 @@ debounce_set_trip(struct debounce *db, uint16_t trip)
                 DB_STORE(db->trip, trip);
                 DB_STORE(db->counter, 0u);
                 DB_STORE(db->output, false);
+                DB_STORE(db->prev_output, false);
                 result = true;
         }
 
