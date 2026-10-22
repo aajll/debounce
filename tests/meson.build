@@ -1,4 +1,6 @@
 thread_dep = dependency('threads')
+cc = meson.get_compiler('c')
+probe_src = files('atomic_mode_probe.c')
 
 test_exe = executable(
   'test_debounce',
@@ -65,10 +67,27 @@ test(
   timeout: 60,
 )
 
+# A consumer of debounce_dep compiles the header with the configured options.
+dep_mode = {
+  'auto': cc.get_define('__STDC_NO_ATOMICS__') == '' ? 'C11' : 'VOLATILE',
+  'c11': 'C11',
+  'volatile': 'VOLATILE',
+}[get_option('atomicity_mode')]
+assert(
+  cc.compiles(
+    probe_src,
+    args: [
+      '-DDEBOUNCE_PROBE_EXPECT_MODE=DEBOUNCE_ATOMIC_MODE_' + dep_mode,
+      '-DDEBOUNCE_PROBE_EXPECT_CALLBACKS=@0@'.format(get_option('enable_callbacks') ? 1 : 0),
+    ],
+    dependencies: debounce_dep,
+    name: 'debounce_dep carries the atomicity and callback options',
+  ),
+  'debounce_dep must carry -Datomicity_mode and -Denable_callbacks to consumers',
+)
+
 # Without an explicit flag the header picks C11 atomics, and falls back to
 # volatile when the compiler defines __STDC_NO_ATOMICS__.
-cc = meson.get_compiler('c')
-probe_src = files('atomic_mode_probe.c')
 foreach mode : [[[], 'C11'], [['-D__STDC_NO_ATOMICS__=1'], 'VOLATILE']]
   assert(
     cc.compiles(

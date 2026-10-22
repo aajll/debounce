@@ -62,7 +62,7 @@ Every translation unit that includes `debounce.h` must see the same configuratio
 
 Define at most one `DEBOUNCE_USE_*` macro. Select `DEBOUNCE_USE_VOLATILE_ATOMIC` on a single-core target whose 8-bit or 16-bit atomics are not lock-free, such as an 8-bit or 16-bit core or ARMv6-M; the C11 mode fails to compile there. [design.md](design.md#atomicity-modes) explains the choice.
 
-The Meson options `-Datomicity_mode={auto,c11,volatile}` and `-Denable_callbacks=true` set the same macros for this project's own tests. They are project arguments, so they do not reach a consumer's translation units: a consumer defines the macro in its own build. `auto`, the default, leaves the mode to the header.
+The Meson options `-Datomicity_mode={auto,c11,volatile}` and `-Denable_callbacks=true` set the same macros. They are compile arguments of `debounce_dep` and `Cflags` in `debounce.pc`, so every translation unit that uses the dependency compiles the header with them; a Meson subproject consumer sets them with `-Ddebounce:enable_callbacks=true`. A copy-in build defines the macros itself. `auto`, the default, leaves the mode to the header.
 
 ## Build and test
 
