@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `-Datomicity_mode` and `-Denable_callbacks` reach consumers: the defines are compile arguments of `debounce_dep` and `Cflags` in `debounce.pc`, so a Meson subproject or pkg-config consumer compiles the header with the configured mode and callbacks.
 - `debounce_set_trip` clears `prev_output` with `output`, so `debounce_fell` no longer reports a falling edge straight after the call when the output had been held high; no update produced that edge and no callback fired for it.
 - `trip` and `fall_trip` are atomic like the other fields, so `debounce_get_trip()` and `debounce_get_fall_trip()` no longer race with `debounce_set_trip()` and `debounce_set_fall_trip()` under the single-writer, many-readers contract.
 

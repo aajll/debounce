@@ -34,22 +34,25 @@ foreach name, value : version_macros
   endif
 endforeach
 
-# Apply project options as compiler arguments
+# The header-only code compiles in each consumer's translation units, so the
+# option defines travel with debounce_dep and debounce.pc.
+debounce_args = []
 atomicity = get_option('atomicity_mode')
 if atomicity == 'c11'
-  add_project_arguments('-DDEBOUNCE_USE_C11_ATOMIC', language: 'c')
+  debounce_args += '-DDEBOUNCE_USE_C11_ATOMIC'
 elif atomicity == 'volatile'
-  add_project_arguments('-DDEBOUNCE_USE_VOLATILE_ATOMIC', language: 'c')
+  debounce_args += '-DDEBOUNCE_USE_VOLATILE_ATOMIC'
 endif
 
 if get_option('enable_callbacks')
-  add_project_arguments('-DDEBOUNCE_ENABLE_CALLBACKS=1', language: 'c')
+  debounce_args += '-DDEBOUNCE_ENABLE_CALLBACKS=1'
 endif
 
 public_headers = include_directories('include')
 
 debounce_dep = declare_dependency(
   include_directories: [public_headers],
+  compile_args: debounce_args,
 )
 
 meson.override_dependency('debounce', debounce_dep)
@@ -66,6 +69,7 @@ pkg.generate(
   description: project_description,
   filebase: 'debounce',
   version: meson.project_version(),
+  extra_cflags: debounce_args,
 )
 
 if get_option('build_tests')
